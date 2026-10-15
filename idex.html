@@ -1,0 +1,106 @@
+const express = require('express');
+const Database = require('better-sqlite3');
+const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const path = require('path');
+ 
+const E = process.env;
+const PORT = E.PORT || 3000, JWT_SECRET = E.JWT_SECRET || 'dev-secret', ADMIN_KEY = E.ADMIN_KEY || 'admin';
+const db = new Database(process.env.DB_PATH || 'shop.db');
+db.pragma('journal_mode = WAL');
+db.exec(`
+CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, provider TEXT, pid TEXT, name TEXT, email TEXT, balance INTEGER DEFAULT 0, UNIQUE(provider,pid));
+CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY, name TEXT, price INTEGER, description TEXT, image TEXT);
+CREATE TABLE IF NOT EXISTS items(id INTEGER PRIMARY KEY, product_id INTEGER, content TEXT, sold INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS deposits(id INTEGER PRIMARY KEY, user_id INTEGER, amount INTEGER, status TEXT DEFAULT 'pending', created TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY, user_id INTEGER, product_id INTEGER, product_name TEXT, price INTEGER, content TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
+`);
+ 
+const app = express();
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+const wrap = f => (req, res) => Promise.resolve(f(req, res)).catch(e => res.status(400).json({ error: e.message }));
+const sign = u => jwt.sign({ id: u.id }, JWT_SECRET, { expiresIn: '30d' });
+const upsert = (provider, pid, name, email) => {
+  db.prepare('INSERT OR IGNORE INTO users(provider,pid,name,email) VALUES(?,?,?,?)').run(provider, pid, name, email || '');
+  return db.prepare('SELECT * FROM users WHERE provider=? AND pid=?').get(provider, pid);
+};
+const auth = (req, res, next) => {
+  try {
+    const t = (req.headers.authorization || '').replace('Bearer ', '');
+    req.user = db.prepare('SELECT * FROM users WHERE id=?').get(jwt.verify(t, JWT_SECRET).id);
+    if (!req.user) throw 0; next();
+  } catch { res.status(401).json({ error: 'Vui lòng đăng nhập' }); }
+};
+const admin = (req, res, next) => req.headers['x-admin-key'] === ADMIN_KEY ? next() : res.status(403).json({ error: 'Sai ADMIN_KEY' });
+const credit = db.transaction(id => {
+  const d = db.prepare("SELECT * FROM deposits WHERE id=? AND status='pending'").get(id);
+  if (!d) throw new Error('Đơn nạp không tồn tại hoặc đã duyệt');
+  db.prepare("UPDATE deposits SET status='done' WHERE id=?").run(id);
+  db.prepare('UPDATE users SET balance=balance+? WHERE id=?').run(d.amount, d.user_id);
+});
+ 
+app.get('/api/config', (_, res) => res.json({ googleClientId: E.GOOGLE_CLIENT_ID || '', facebookAppId: E.FACEBOOK_APP_ID || '' }));
+ 
+// Đăng nhập Google: frontend gửi ID token, server xác minh
+app.post('/api/login/google', wrap(async (req, res) => {
+  const t = await new OAuth2Client(E.GOOGLE_CLIENT_ID).verifyIdToken({ idToken: req.body.credential, audience: E.GOOGLE_CLIENT_ID });
+  const p = t.getPayload(); const u = upsert('google', p.sub, p.name, p.email);
+  res.json({ token: sign(u) });
+}));
+// Đăng nhập Facebook: server hỏi Graph API để xác minh access token
+app.post('/api/login/facebook', wrap(async (req, res) => {
+  const r = await fetch('https://graph.facebook.com/me?fields=id,name,email&access_token=' + encodeURIComponent(req.body.accessToken));
+  const p = await r.json(); if (!p.id) throw new Error('Token Facebook không hợp lệ');
+  res.json({ token: sign(upsert('facebook', p.id, p.name, p.email)) });
+}));
+ 
+app.get('/api/me', auth, (req, res) => { const { id, name, email, balance } = req.user; res.json({ id, name, email, balance }); });
+app.get('/api/products', (_, res) => res.json(db.prepare(
+  'SELECT p.id,p.name,p.price,p.description,p.image,(SELECT COUNT(*) FROM items i WHERE i.product_id=p.id AND i.sold=0) AS stock FROM products p').all()));
+app.get('/api/orders', auth, (req, res) => res.json(db.prepare('SELECT * FROM orders WHERE user_id=? ORDER BY id DESC').all(req.user.id)));
+app.get('/api/deposits', auth, (req, res) => res.json(db.prepare('SELECT * FROM deposits WHERE user_id=? ORDER BY id DESC').all(req.user.id)));
+ 
+// Tạo lệnh nạp: người dùng chuyển khoản với nội dung NAP<id>
+app.post('/api/deposit', auth, wrap((req, res) => {
+  const amount = parseInt(req.body.amount); if (!(amount >= 10000)) throw new Error('Nạp tối thiểu 10.000đ');
+  const id = db.prepare('INSERT INTO deposits(user_id,amount) VALUES(?,?)').run(req.user.id, amount).lastInsertRowid;
+  res.json({ id, content: 'NAP' + id, amount, bank: E.BANK_NAME, account: E.BANK_ACCOUNT, owner: E.BANK_OWNER });
+}));
+ 
+// Mua hàng: trừ tiền + lấy 1 item trong một transaction (không bị mua trùng)
+const buy = db.transaction((user, pid) => {
+  const p = db.prepare('SELECT * FROM products WHERE id=?').get(pid); if (!p) throw new Error('Sản phẩm không tồn tại');
+  const it = db.prepare('SELECT * FROM items WHERE product_id=? AND sold=0 LIMIT 1').get(pid); if (!it) throw new Error('Hết hàng');
+  const r = db.prepare('UPDATE users SET balance=balance-? WHERE id=? AND balance>=?').run(p.price, user.id, p.price);
+  if (!r.changes) throw new Error('Số dư không đủ, vui lòng nạp thêm');
+  db.prepare('UPDATE items SET sold=1 WHERE id=?').run(it.id);
+  db.prepare('INSERT INTO orders(user_id,product_id,product_name,price,content) VALUES(?,?,?,?,?)').run(user.id, p.id, p.name, p.price, it.content);
+  return it.content;
+});
+app.post('/api/buy', auth, wrap((req, res) => res.json({ content: buy(req.user, req.body.productId) })));
+ 
+// Webhook ngân hàng (SePay/Casso...): tự cộng tiền khi nội dung có NAP<id> và đủ số tiền
+app.post('/api/webhook/bank', wrap((req, res) => {
+  if ((req.headers.authorization || '') !== 'Apikey ' + E.WEBHOOK_KEY) throw new Error('Sai khoá');
+  const m = /NAP(\d+)/i.exec(req.body.content || ''); if (!m) return res.json({ ok: false });
+  const d = db.prepare('SELECT * FROM deposits WHERE id=?').get(m[1]);
+  if (d && Number(req.body.transferAmount) >= d.amount) credit(d.id);
+  res.json({ ok: true });
+}));
+ 
+// ===== Quản trị (gửi header x-admin-key) =====
+app.post('/api/admin/product', admin, wrap((req, res) => {
+  const { name, price, description = '', image = '' } = req.body;
+  res.json({ id: db.prepare('INSERT INTO products(name,price,description,image) VALUES(?,?,?,?)').run(name, price, description, image).lastInsertRowid });
+}));
+app.post('/api/admin/items', admin, wrap((req, res) => { // {productId, items:["tk|mk", ...]}
+  const ins = db.prepare('INSERT INTO items(product_id,content) VALUES(?,?)');
+  db.transaction(() => req.body.items.forEach(c => ins.run(req.body.productId, c)))();
+  res.json({ added: req.body.items.length });
+}));
+app.get('/api/admin/deposits', admin, (_, res) => res.json(db.prepare("SELECT * FROM deposits WHERE status='pending' ORDER BY id DESC").all()));
+app.post('/api/admin/approve', admin, wrap((req, res) => { credit(req.body.depositId); res.json({ ok: true }); }));
+ 
+app.listen(PORT, () => console.log('Chạy tại http://localhost:' + PORT));
+ 
