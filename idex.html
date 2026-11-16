@@ -1,0 +1,469 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cày Thuê Blox Fruits - Tean Store</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+:root {
+    --bg: #f4f6fa;
+    --card: #ffffff;
+    --text: #30364a;
+    --muted: #858b9b;
+    --primary: #696cff;
+    --border: #e8eaf0;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* SIDEBAR */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 255px;
+    height: 100vh;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    padding: 22px 15px;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: .3s;
+}
+
+.logo {
+    font-size: 25px;
+    font-weight: 900;
+    color: var(--primary);
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 30px;
+}
+
+.menu-title {
+    font-size: 11px;
+    color: #a5a9b5;
+    margin: 20px 10px 10px;
+    font-weight: bold;
+}
+
+.menu a {
+    display: block;
+    text-decoration: none;
+    color: #656b7c;
+    padding: 13px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 4px;
+    transition: .2s;
+}
+
+.menu a:hover,
+.menu a.active {
+    background: #eeeeff;
+    color: var(--primary);
+}
+
+/* MAIN */
+.main {
+    margin-left: 255px;
+    padding: 25px 30px;
+    min-height: 100vh;
+}
+
+/* NAVBAR */
+.navbar {
+    background: var(--card);
+    padding: 16px 22px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.025);
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.menu-btn {
+    border: none;
+    background: #eeeeff;
+    color: var(--primary);
+    padding: 9px 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 19px;
+}
+
+.navbar-right {
+    display: flex;
+    gap: 10px;
+}
+
+.navbar-right a {
+    text-decoration: none;
+    padding: 10px 17px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.register {
+    color: white;
+    background: var(--primary);
+}
+
+.login {
+    color: var(--primary);
+    background: #eeeeff;
+}
+
+/* CONTENT */
+.page-title {
+    font-size: 23px;
+    font-weight: bold;
+    margin-bottom: 22px;
+}
+
+.content-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.025);
+}
+
+.service-heading {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 22px;
+}
+
+.notice {
+    background: #fff4e5;
+    border: 1px solid #ffe0ad;
+    color: #946000;
+    border-radius: 9px;
+    padding: 17px;
+    line-height: 1.7;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.notice.red {
+    background: #fff0f0;
+    border-color: #ffd4d4;
+    color: #c13d3d;
+}
+
+.banner {
+    background: linear-gradient(120deg,#696cff,#9b72ff);
+    color: white;
+    text-align: center;
+    padding: 35px 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.banner h2 {
+    font-size: 25px;
+    margin-bottom: 10px;
+}
+
+.banner p {
+    opacity: .9;
+    font-size: 14px;
+}
+
+/* SERVICE AREA */
+.section-title {
+    font-size: 19px;
+    margin-bottom: 18px;
+    font-weight: bold;
+}
+
+.service-grid {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 18px;
+}
+
+.service-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    transition: .25s;
+}
+
+.service-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 5px 20px rgba(0,0,0,.07);
+}
+
+.service-icon {
+    font-size: 35px;
+    margin-bottom: 12px;
+}
+
+.service-item h3 {
+    font-size: 16px;
+    margin-bottom: 9px;
+}
+
+.service-item p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.service-item button {
+    margin-top: 16px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+/* FOOTER */
+.footer {
+    background: var(--card);
+    padding: 25px;
+    border-radius: 12px;
+    margin-top: 25px;
+    text-align: center;
+    line-height: 2;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.footer h3 {
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.footer a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* MOBILE */
+@media(max-width:900px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main {
+        margin-left: 0;
+        padding: 15px;
+    }
+
+    .service-grid {
+        grid-template-columns: repeat(2,1fr);
+    }
+}
+
+@media(max-width:550px) {
+    .navbar {
+        padding: 13px;
+    }
+
+    .navbar-right a {
+        padding: 9px;
+        font-size: 11px;
+    }
+
+    .page-title {
+        font-size: 19px;
+    }
+
+    .content-card {
+        padding: 17px;
+    }
+
+    .service-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .banner h2 {
+        font-size: 21px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+
+    <div class="logo">TEAN STORE</div>
+
+    <div class="menu-title">MENU</div>
+
+    <nav class="menu">
+        <a href="#" class="active">⌂ Trang Chủ</a>
+        <a href="#">◷ Lịch Sử Mua</a>
+        <a href="#">▣ Tài Khoản Loại 1</a>
+        <a href="#">▣ Tài Khoản Loại 2</a>
+
+        <div class="menu-title">DỊCH VỤ KHÁC</div>
+
+        <a href="#">♧ Tiếp Thị Liên Kết</a>
+        <a href="#">▤ Đơn hàng Dịch vụ</a>
+        <a href="#">▤ Đơn hàng Vật Phẩm</a>
+        <a href="#">◇ Rút Thưởng (Kho Cũ)</a>
+        <a href="#">◇ Rút Thưởng Trò Chơi</a>
+        <a href="#">◷ Lịch Sử Vật Phẩm</a>
+
+        <div class="menu-title">TÀI KHOẢN</div>
+
+        <a href="#">♙ Hồ Sơ</a>
+        <a href="#">♧ Bảo Mật</a>
+
+        <div class="menu-title">NẠP TIỀN</div>
+
+        <a href="#">▣ Thẻ Cào</a>
+        <a href="#">▣ Ngân Hàng</a>
+        <a href="#">▣ Binance Pay</a>
+        <a href="#">⇄ Dòng Tiền</a>
+        <a href="#">▤ Tin Tức</a>
+    </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+    <header class="navbar">
+
+        <div class="navbar-left">
+            <button class="menu-btn" onclick="toggleMenu()">☰</button>
+            <strong>TEAN STORE</strong>
+        </div>
+
+        <div class="navbar-right">
+            <a href="#" class="register">Đăng Ký</a>
+            <a href="#" class="login">Đăng Nhập</a>
+        </div>
+
+    </header>
+
+    <h1 class="page-title">Dịch Vụ - Cày Thuê Blox Fruits</h1>
+
+    <section class="content-card">
+
+        <h2 class="service-heading">
+            Cày Thuê Blox Fruits
+        </h2>
+
+        <div class="notice">
+            <strong>⚠ LƯU Ý:</strong>
+            Tắt xác minh 2 bước (2FA) trước khi tạo đơn,
+            đơn hàng sẽ được duyệt thủ công trong vòng
+            12H - 3D (tùy gói dịch vụ bạn chọn).
+        </div>
+
+        <div class="notice red">
+            <strong>⚠ CẢNH BÁO:</strong>
+            Dịch vụ cày thuê có thể sử dụng phần mềm bên thứ ba.
+            Hãy cân nhắc rủi ro bảo mật và an toàn tài khoản
+            trước khi sử dụng.
+        </div>
+
+        <div class="banner">
+            <h2>UY TÍN - NHANH GỌN - CHẤT LƯỢNG</h2>
+            <p>TEAN STORE - DỊCH VỤ GAME</p>
+        </div>
+
+        <h2 class="section-title">
+            Danh Sách Dịch Vụ
+        </h2>
+
+        <div class="service-grid">
+
+            <div class="service-item">
+                <div class="service-icon">⚔️</div>
+                <h3>Cày Level</h3>
+                <p>Khu vực giới thiệu dịch vụ cày cấp Blox Fruits.</p>
+                <button onclick="alert('Đây là giao diện demo.')">
+                    Xem Chi Tiết
+                </button>
+            </div>
+
+            <div class="service-item">
+                <div class="service-icon">🍎</div>
+                <h3>Trái Ác Quỷ</h3>
+                <p>Khu vực giới thiệu dịch vụ liên quan đến trái ác quỷ.</p>
+                <button onclick="alert('Đây là giao diện demo.')">
+                    Xem Chi Tiết
+                </button>
+            </div>
+
+            <div class="service-item">
+                <div class="service-icon">🏆</div>
+                <h3>Nhiệm Vụ</h3>
+                <p>Khu vực giới thiệu các dịch vụ trong trò chơi.</p>
+                <button onclick="alert('Đây là giao diện demo.')">
+                    Xem Chi Tiết
+                </button>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+
+        <h3>LIÊN HỆ HỖ TRỢ</h3>
+
+        <p>Trang Web Cung Cấp Dịch Vụ Game Tean Store</p>
+
+        <p>
+            Email:
+            <a href="mailto:teanstore295@gmail.com">
+                teanstore295@gmail.com
+            </a>
+        </p>
+
+        <p>
+            © 2026 TEANSTORE.COM.
+            Tất cả quyền được bảo lưu.
+        </p>
+
+        <p>Phát triển bởi TEANSTORE.COM • v3.0.6</p>
+
+    </footer>
+
+</main>
+
+<script>
+function toggleMenu() {
+    document.getElementById("sidebar").classList.toggle("show");
+}
+</script>
+
+</body>
+</html>
